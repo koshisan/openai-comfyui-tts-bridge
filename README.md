@@ -29,8 +29,21 @@ Two extension points are wired up but not yet implemented (planned):
 docker compose up -d
 ```
 
-Point `wyoming_openai` at `http://<host>:7780/v1` and it appears to Home Assistant
-as an OpenAI-compatible TTS service.
+The compose file starts two containers on the same network:
+
+- `tts-bridge` on port **7780** — the OpenAI-compatible HTTP API and web UI.
+- `wyoming_openai` on port **10300** — a Wyoming Protocol server (from
+  [roryeckel/wyoming_openai](https://github.com/roryeckel/wyoming_openai))
+  that translates Wyoming requests into calls against `tts-bridge`.
+
+In Home Assistant → Settings → Devices & Services → Add Integration →
+**Wyoming Protocol**, enter:
+
+- Host: the docker host that runs this stack (e.g. `192.168.1.10`)
+- Port: `10300`
+
+The bridge is now HA's TTS backend. The `nadeko` voice from `voices.yaml`
+appears in the voice picker.
 
 ## Configuration
 
