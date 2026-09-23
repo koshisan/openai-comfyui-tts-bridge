@@ -1,0 +1,13 @@
+services:
+  tts-bridge:
+    build: .
+    container_name: tts-bridge
+    restart: unless-stopped
+    ports:
+      - "7780:7780"
+    volumes:
+      # Mount your local config here. See config/config.example.yaml.
+      - ./config:/etc/tts-bridge:ro
+    environment:
+      TTS_BRIDGE_CONFIG: /etc/tts-bridge/config.yaml
+      TTS_BRIDGE_VOICES: /etc/tts-bridge/voices.yaml

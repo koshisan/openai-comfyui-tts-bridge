@@ -1,0 +1,55 @@
+# openai-comfyui-tts-bridge config
+
+server:
+  host: 0.0.0.0
+  port: 7780
+  # If set, requests must send `Authorization: Bearer <token>`.
+  # Leave null to disable auth (e.g. behind trusted reverse proxy).
+  auth_token: null
+
+# Which backend to use when a request has no explicit override.
+# Options: comfyui, piper (piper is a stub for now)
+default_backend: comfyui
+
+comfyui:
+  base_url: http://aimax.koshi.de:8188
+  # HTTP timeout for one workflow submission (seconds).
+  # Higgs at RTF 0.6 on a 4090 finishes ~30s of audio in ~20s; give it slack for cold starts.
+  request_timeout: 180
+  # Poll interval for /history endpoint.
+  poll_interval: 0.5
+  # Max concurrent workflows submitted to ComfyUI. ComfyUI processes serially,
+  # so keep this at 1 for a single ComfyUI instance.
+  max_concurrent: 1
+  # Node IDs in the workflow template — see workflows/higgs_voice_clone.json
+  # These match the shipped template; edit if you swap workflows.
+  nodes:
+    load_model: "1"
+    load_audio: "2"
+    voice_clone: "3"
+    save_audio: "4"
+
+piper:
+  # Piper CPU fallback. Not implemented yet.
+  # When ComfyUI returns non-200 or times out, this backend is used.
+  enabled: false
+  binary_path: /usr/local/bin/piper
+  model_dir: /models/piper
+
+streaming:
+  # Split target text at sentence boundaries and stream chunks as they render.
+  enabled: true
+  # Max sentences per chunk. Larger = fewer, bigger chunks = higher TTFA
+  # but smoother prosody. 1 = every sentence separately.
+  sentences_per_chunk: 1
+  # Silence inserted between rendered chunks (seconds).
+  chunk_gap: 0.15
+
+preprocessing:
+  # Text preprocessing pipeline. Currently a no-op passthrough — hooks
+  # are wired up but implementations are TODO.
+  enabled: false
+  # Future: strip emojis, flatten markdown bullets, number-to-words, etc.
+
+# Default voice used when the OpenAI `voice` field is missing.
+default_voice: nadeko

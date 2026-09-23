@@ -1,0 +1,50 @@
+[project]
+name = "openai-comfyui-tts-bridge"
+version = "0.1.0"
+description = "OpenAI-compatible TTS API bridging to ComfyUI (Higgs Audio v3)"
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+authors = [{name = "koshisan"}]
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "httpx>=0.27",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "pyyaml>=6.0",
+    "soundfile>=0.12",
+    "numpy>=1.26",
+    "nltk>=3.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "pytest-httpx>=0.32",
+    "ruff>=0.7",
+]
+
+[project.scripts]
+tts-bridge = "tts_bridge.main:cli"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tts_bridge"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B", "SIM"]
+# B008 flags fastapi.Depends() in default arguments — that's the idiomatic FastAPI pattern.
+ignore = ["B008"]

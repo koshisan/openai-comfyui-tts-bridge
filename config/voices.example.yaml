@@ -1,0 +1,23 @@
+# Voice presets. Each voice maps a name (used as OpenAI `voice` field) to
+# a reference clip + transcript + Higgs default parameters.
+#
+# The `reference_audio` path is resolved against the ComfyUI `input/` folder
+# on the ComfyUI host — file must exist there. Put your clips into
+# `ComfyUI/input/` and reference them by basename.
+
+voices:
+  nadeko:
+    reference_audio: nadeko_24k.wav
+    reference_text: "戦国なでこ中学2年生6月3日生まれ 豚子さんのビー型北区部好きな漫画は80年代 好きな小説は自分がいる 好きな映画はファンタジー"
+    higgs:
+      dtype: bf16
+      attention: sdpa
+      temperature: 0.8
+      top_p: 0.95
+      top_k: 50
+      seed: 0            # 0 = random, positive = deterministic
+      max_new_tokens: 2048
+      words_per_chunk: 45
+      pause_between_chunks: 0.15
+      longform_chunking: true
+      tag_chunk: false

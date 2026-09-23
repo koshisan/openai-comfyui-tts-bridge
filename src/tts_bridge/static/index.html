@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>openai-comfyui-tts-bridge</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    max-width: 780px; margin: 2em auto; padding: 0 1em;
+    background: #1a1a1c; color: #e6e6e8;
+  }
+  h1 { font-size: 1.4em; margin-bottom: 0.2em; }
+  .sub { color: #8a8a92; margin-bottom: 1.5em; font-size: 0.9em; }
+  textarea, select, input, button {
+    width: 100%; padding: 0.6em; font-size: 1em; font-family: inherit;
+    background: #26262a; color: #e6e6e8; border: 1px solid #3a3a3f; border-radius: 4px;
+  }
+  textarea { min-height: 100px; resize: vertical; }
+  label { display: block; margin: 1em 0 0.3em; color: #a8a8b0; font-size: 0.9em; }
+  .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6em; }
+  button {
+    margin-top: 1.2em; background: #4a5cff; border-color: #4a5cff; cursor: pointer;
+    color: #fff; font-weight: 500;
+  }
+  button:hover { background: #6478ff; }
+  button:disabled { background: #3a3a3f; cursor: not-allowed; }
+  audio { width: 100%; margin-top: 1em; }
+  .status { margin-top: 1em; font-size: 0.9em; color: #8a8a92; min-height: 1.2em; }
+  .status.error { color: #ff6b6b; }
+</style>
+</head>
+<body>
+<h1>openai-comfyui-tts-bridge</h1>
+<div class="sub">Test frontend. Backend hits <code>/v1/audio/speech</code>.</div>
+
+<label for="voice">Voice</label>
+<select id="voice"></select>
+
+<label for="text">Text</label>
+<textarea id="text" placeholder="Guten Morgen, Onii-chan~"></textarea>
+
+<div class="row">
+  <div>
+    <label for="temperature">temperature</label>
+    <input id="temperature" type="number" step="0.05" min="0" max="2" placeholder="preset" />
+  </div>
+  <div>
+    <label for="top_p">top_p</label>
+    <input id="top_p" type="number" step="0.01" min="0" max="1" placeholder="preset" />
+  </div>
+  <div>
+    <label for="top_k">top_k</label>
+    <input id="top_k" type="number" step="1" min="0" max="1026" placeholder="preset" />
+  </div>
+  <div>
+    <label for="seed">seed</label>
+    <input id="seed" type="number" step="1" min="0" placeholder="preset" />
+  </div>
+</div>
+
+<label for="format">response_format</label>
+<select id="format">
+  <option value="wav">wav</option>
+  <option value="flac">flac</option>
+  <option value="opus">opus</option>
+  <option value="pcm">pcm (raw s16le mono 24kHz)</option>
+</select>
+
+<button id="go">Synthesize</button>
+
+<div id="status" class="status"></div>
+<audio id="player" controls></audio>
+
+<script>
+async function loadVoices() {
+  const sel = document.getElementById('voice');
+  try {
+    const r = await fetch('/v1/models');
+    const j = await r.json();
+    for (const m of j.data || []) {
+      const o = document.createElement('option');
+      o.value = o.textContent = m.id;
+      sel.appendChild(o);
+    }
+  } catch (e) {
+    document.getElementById('status').textContent = 'failed to load voices: ' + e.message;
+    document.getElementById('status').classList.add('error');
+  }
+}
+loadVoices();
+
+document.getElementById('go').addEventListener('click', async () => {
+  const btn = document.getElementById('go');
+  const st = document.getElementById('status');
+  const player = document.getElementById('player');
+  const text = document.getElementById('text').value.trim();
+  if (!text) { st.textContent = 'empty text'; st.classList.add('error'); return; }
+
+  const body = {
+    input: text,
+    voice: document.getElementById('voice').value,
+    response_format: document.getElementById('format').value,
+  };
+  for (const k of ['temperature', 'top_p', 'top_k', 'seed']) {
+    const v = document.getElementById(k).value;
+    if (v !== '') body[k] = k === 'top_k' || k === 'seed' ? parseInt(v, 10) : parseFloat(v);
+  }
+
+  btn.disabled = true;
+  st.classList.remove('error');
+  st.textContent = 'synthesizing…';
+  const t0 = performance.now();
+  try {
+    const r = await fetch('/v1/audio/speech', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status + ': ' + (await r.text()));
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    player.src = url;
+    player.play();
+    const dt = ((performance.now() - t0) / 1000).toFixed(2);
+    st.textContent = `ok (${dt}s, ${(blob.size / 1024).toFixed(1)} KB)`;
+  } catch (e) {
+    st.textContent = 'error: ' + e.message;
+    st.classList.add('error');
+  } finally {
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
