@@ -63,7 +63,12 @@ async def speech(
     if not text.strip():
         raise HTTPException(400, "input is empty after preprocessing")
 
-    if req.stream and config.streaming.enabled:
+    # For streamable formats (wav, pcm), always emit as chunked-transfer so
+    # OpenAI-SDK-based clients using `.with_streaming_response.create()`
+    # (e.g. wyoming_openai) start playing audio while later sentences are still
+    # rendering. For FLAC/Opus we still need a full container, so those buffer.
+    can_stream = config.streaming.enabled and fmt in ("wav", "pcm")
+    if can_stream:
         return await _stream_response(text, voice, backend, config, fmt)
 
     return await _oneshot_response(text, voice, backend, config, fmt)

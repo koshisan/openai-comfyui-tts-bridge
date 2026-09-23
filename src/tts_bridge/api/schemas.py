@@ -15,7 +15,7 @@ class SpeechRequest(BaseModel):
     voice: str | None = None                           # voice preset name
     response_format: str = "wav"                       # wav|pcm|flac|opus
     speed: float = 1.0                                 # accepted, not currently applied
-    stream: bool = False                               # True → chunked-transfer streaming
+    stream: bool = False                               # kept for API compat; ignored — wav/pcm always chunked
 
     # Optional per-request overrides (extensions beyond OpenAI's spec)
     temperature: float | None = None
